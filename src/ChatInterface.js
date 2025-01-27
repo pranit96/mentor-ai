@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { HfInference } from '@huggingface/inference';
-import { Box, Input, Button, Flex, Text, Spinner } from '@chakra-ui/react';
+import { Box, TextField, Button, Typography, CircularProgress, Paper } from '@mui/material';
 
 const ChatInterface = () => {
   const [messages, setMessages] = useState([]);
@@ -59,51 +59,71 @@ const ChatInterface = () => {
   };
 
   return (
-    <Box>
-      <Box borderWidth={1} borderRadius="lg" p={4} height="60vh" overflowY="auto" mb={4}>
+    <Box sx={{ width: '100%', maxWidth: 600, margin: '0 auto' }}>
+      <Box
+        sx={{
+          borderWidth: 1,
+          borderRadius: 2,
+          padding: 2,
+          height: '60vh',
+          overflowY: 'auto',
+          mb: 2,
+          backgroundColor: 'background.paper',
+        }}
+      >
         {messages.map((msg, index) => (
-          <Flex key={index} justify={msg.isBot ? "flex-start" : "flex-end"} mb={3}>
-            <Box
-              p={3}
-              borderRadius="lg"
-              bg={msg.isBot ? "gray.100" : "blue.500"}
-              color={msg.isBot ? "black" : "white"}
-              maxWidth="80%"
+          <Box key={index} sx={{ display: 'flex', justifyContent: msg.isBot ? 'flex-start' : 'flex-end', mb: 2 }}>
+            <Paper
+              sx={{
+                padding: 2,
+                borderRadius: 2,
+                maxWidth: '80%',
+                backgroundColor: msg.isBot ? 'grey.100' : 'primary.main',
+                color: msg.isBot ? 'text.primary' : 'white',
+              }}
             >
-              <Text whiteSpace="pre-wrap">{msg.text}</Text>
-            </Box>
-          </Flex>
+              <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+                {msg.text}
+              </Typography>
+            </Paper>
+          </Box>
         ))}
+
         {isLoading && (
-          <Flex justify="flex-start" mb={4}>
-            <Box p={3} borderRadius="lg" bg="gray.100" maxWidth="80%">
-              <Spinner size="sm" mr={2} />
-              <Text as="span">Mentor is thinking...</Text>
-            </Box>
-          </Flex>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2 }}>
+            <Paper sx={{ padding: 2, borderRadius: 2, maxWidth: '80%', backgroundColor: 'grey.100' }}>
+              <CircularProgress size={24} sx={{ mr: 2 }} />
+              <Typography variant="body1" component="span">
+                Mentor is thinking...
+              </Typography>
+            </Paper>
+          </Box>
         )}
+
         <div ref={messagesEndRef} />
       </Box>
 
-      <Flex gap={2}>
-        <Input
+      <Box sx={{ display: 'flex', gap: 2 }}>
+        <TextField
+          variant="outlined"
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
           placeholder="Ask your mentor anything..."
+          fullWidth
           onKeyUp={(e) => e.key === 'Enter' && handleSend()}
-          flex={1}
         />
         <Button 
-          colorScheme="blue" 
+          variant="contained" 
+          color="primary" 
           onClick={handleSend}
-          isLoading={isLoading}
+          disabled={isLoading}
         >
           Send
         </Button>
-      </Flex>
-      <Text fontSize="sm" color="gray.500" mt={2}>
+      </Box>
+      <Typography variant="body2" color="textSecondary" sx={{ marginTop: 2 }}>
         Free requests remaining: {apiLimit}
-      </Text>
+      </Typography>
     </Box>
   );
 };

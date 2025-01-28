@@ -1,0 +1,7 @@
+{
+    "name": "mentor-ai",
+    "private": true,
+    "scripts": {
+      "vercel-build": "npm run build --prefix client && npm run build --prefix server"
+    }
+  }

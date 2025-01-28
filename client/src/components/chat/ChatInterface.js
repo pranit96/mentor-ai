@@ -1,77 +1,119 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Typography, TextField, Button, CircularProgress } from '@mui/material';
-import { Send } from '@mui/icons-material';
-import DOMPurify from 'dompurify';
+import React, { useState } from 'react';
+import { Box, Button, TextField, Typography, Paper } from '@mui/material';
 
 const ChatInterface = () => {
-  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [error, setError] = useState(null);
 
-  const sanitizeInput = (text) => {
-    return DOMPurify.sanitize(text, { ALLOWED_TAGS: [] });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const cleanInput = sanitizeInput(input);
-    if (!cleanInput.trim()) return;
+  const handleSendMessage = async () => {
+    if (!input.trim()) return;
 
     try {
-      setLoading(true);
+      // Add user message immediately
+      const userMessage = { text: input, isUser: true };
+      setMessages(prev => [...prev, userMessage]);
+      
+      // Clear input
+      setInput('');
+      setError(null);
+
+      // Call secure Next.js API route
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: cleanInput })
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: input }),
       });
 
-      if (!response.ok) throw new Error('Request failed');
-      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
-      setMessages([...messages, 
-        { text: cleanInput, isUser: true },
-        { text: data.response, isUser: false }
-      ]);
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setLoading(false);
-      setInput('');
+      
+      // Add AI response
+      const aiMessage = { text: data.response, isUser: false };
+      setMessages(prev => [...prev, aiMessage]);
+
+    } catch (err) {
+      console.error('Chat error:', err);
+      setError('Failed to get response. Please try again.');
+      // Remove loading state
+      setMessages(prev => prev.filter(msg => msg.text !== '...'));
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
     }
   };
 
   return (
-    <Box sx={{ maxWidth: 800, margin: 'auto', p: 2 }}>
-      <Box sx={{ mb: 2 }}>
-        {messages.map((msg, i) => (
-          <Box key={i} sx={{ 
+    <Box sx={{ 
+      maxWidth: 800, 
+      margin: 'auto', 
+      padding: 3,
+      height: '80vh',
+      display: 'flex',
+      flexDirection: 'column'
+    }}>
+      <Paper sx={{ 
+        flexGrow: 1,
+        overflowY: 'auto', 
+        mb: 2,
+        p: 2,
+        backgroundColor: '#f5f5f5'
+      }}>
+        {messages.map((msg, index) => (
+          <Box key={index} sx={{ 
             textAlign: msg.isUser ? 'right' : 'left',
-            bgcolor: msg.isUser ? '#e3f2fd' : '#f5f5f5',
-            p: 2,
-            borderRadius: 2,
-            mb: 1
+            mb: 2
           }}>
-            <Typography variant="body1">{msg.text}</Typography>
+            <Paper sx={{ 
+              display: 'inline-block',
+              p: 1.5,
+              backgroundColor: msg.isUser ? '#1976d2' : '#e0e0e0',
+              color: msg.isUser ? 'white' : 'black',
+              borderRadius: 2,
+              maxWidth: '70%'
+            }}>
+              <Typography variant="body1">
+                {msg.text}
+              </Typography>
+            </Paper>
           </Box>
         ))}
-      </Box>
-      
-      <form onSubmit={handleSubmit}>
+        {error && (
+          <Typography color="error" sx={{ mt: 1 }}>
+            {error}
+          </Typography>
+        )}
+      </Paper>
+
+      <Box sx={{ display: 'flex', gap: 1 }}>
         <TextField
           fullWidth
           variant="outlined"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          disabled={loading}
-          InputProps={{
-            endAdornment: (
-              <Button type="submit" disabled={loading}>
-                {loading ? <CircularProgress size={24} /> : <Send />}
-              </Button>
-            )
-          }}
+          onKeyPress={handleKeyPress}
+          placeholder="Type your message..."
+          multiline
+          maxRows={4}
         />
-      </form>
+        <Button
+          variant="contained"
+          onClick={handleSendMessage}
+          disabled={!input.trim()}
+          sx={{ height: '56px' }}
+        >
+          Send
+        </Button>
+      </Box>
     </Box>
   );
 };
